@@ -14,7 +14,7 @@ const AdminCheckReviewPoints = (req, res) => {
           for (const categoryData of entryData) {
             for (const categoryName in categoryData) {
               const category = categoryData[categoryName];
-              
+
               // Check if 'category' and 'ReviewPoints' exist before accessing
               if (category && category.length > 0 && category[0].ReviewPoints) {
                 const reviewPoints = category[0].ReviewPoints;
@@ -78,12 +78,11 @@ const AdminCheckReviewPoints = (req, res) => {
     return res.status(500).json({ error: "An error occurred" });
   }
 };
-
 const AdminCheckReviewPointsGet = (req, res) => {
   try {
     const responseData = {};
 
-    const query = "SELECT * FROM admin_check_review_table"; // Update the table name
+    const query = "SELECT * FROM admin_check_review_table";
     Database_Kpi.query(query, (err, results) => {
       if (err) {
         console.error(err);
@@ -95,11 +94,11 @@ const AdminCheckReviewPointsGet = (req, res) => {
 
         if (!responseData[Value]) {
           responseData[Value] = {
-            ReviewPoints: [],
+            "Review Points": [],
           };
         }
 
-        responseData[Value].ReviewPoints.push(ReviewPoints);
+        responseData[Value]["Review Points"].push(ReviewPoints);
       });
 
       return res.status(200).json(responseData);
@@ -109,7 +108,6 @@ const AdminCheckReviewPointsGet = (req, res) => {
     return res.status(500).json({ error: "An error occurred" });
   }
 };
-// AdminCheckReviewPointsDelete
 const AdminCheckReviewPointsDelete = (req, res) => {
   // Extract parameters from request
   const { adminID, category, question } = req.params;
@@ -147,7 +145,9 @@ const AdminCheckReviewPointsDelete = (req, res) => {
 
     // Review Point: Check if data was deleted successfully
     if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "No matching data found for deletion" });
+      return res
+        .status(404)
+        .json({ error: "No matching data found for deletion" });
     }
 
     // Review Point: Successful response
@@ -158,7 +158,6 @@ const AdminCheckReviewPointsDelete = (req, res) => {
   });
 };
 
-
 //Check_Review_Points_Employee_Data
 const Employee_CheckReviewPoints_Post = (req, res) => {
   try {
@@ -166,16 +165,16 @@ const Employee_CheckReviewPoints_Post = (req, res) => {
 
     if (data && Array.isArray(data.ratings)) {
       for (const rating of data.ratings) {
-        const { Value, review_point, self_review, upload } = rating;
+        const { Value, ReviewPoint, SelfReview, imageUrl} = rating;
 
         const insertQuery = `INSERT INTO all_data_employee_check_review_table (Empid, Empname, Value, Review_Points, Self_Review,imageUrl) VALUES (?,?, ?, ?, ?, ?)`;
         const insertValues = [
           data.empid,
           data.empname,
           Value,
-          review_point,
-          self_review,
-          upload,
+          ReviewPoint,
+          SelfReview,
+          imageUrl,
         ];
 
         Database_Kpi.query(insertQuery, insertValues, (err, results) => {
@@ -260,8 +259,8 @@ const Employee_CheckReviewPoints_Get = (req, res) => {
           });
         });
 
-        const data = Object.values(employeesData);
-        res.status(200).json({ status: true, data });
+        const employee = Object.values(employeesData);
+        res.status(200).json({ status: true, employee });
       }
     });
   } catch (error) {
@@ -331,122 +330,100 @@ const Employee_Manager_CheckReviewPoints_Post = (req, res) => {
     const data = req.body;
 
     if (data && Array.isArray(data.ratings)) {
-      for (const rating of data.ratings) {
-        const {
-          Value,
-          review_point,
-          self_review,
-          upload,
-          m_rating,
-          m_comments,
-        } = rating;
+        for (const rating of data.ratings) {
+            const { Value, review_point, self_review, reviewver, Comments, Upload } = rating;
 
-        const insertQuery = `INSERT INTO all_data_employee_manager_check_review_table (Empid, Empname, Value, Review_Points, Self_Review,imageUrl,Manager_Rating,Manager_Comments) VALUES (?,?,?,?, ?, ?, ?, ?)`;
-        const insertValues = [
-          data.empid,
-          data.empname,
-          Value,
-          review_point,
-          self_review,
-          upload,
-          m_rating,
-          m_comments,
-        ];
+            const insertQuery = `INSERT INTO all_data_employee_manager_check_review_table(Empid, Empname, Value, Review_Points, Self_Review, Reviewver, Comments, imageUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+            const insertValues = [data.empid, data.empname, Value, review_point, self_review, reviewver, Comments, Upload];
 
-        Database_Kpi.query(insertQuery, insertValues, (err, results) => {
-          if (err) {
-            console.error(err);
-          }
-        });
-      }
+            Database_Kpi.query(insertQuery, insertValues, (err, results) => {
+                if (err) {
+                    console.error(err);
+                }
+            });
+        }
 
-      return res
-        .status(201)
-        .json({ message: "manager data added successfully" });
+        return res.status(201).json({ message: 'manager data added successfully' });
     } else {
-      return res.status(400).json({ error: "Invalid data format" });
+        return res.status(400).json({ error: 'Invalid data format' });
     }
-  } catch (error) {
+} catch (error) {
     console.error(error);
-    return res.status(500).json({ error: "An error occurred" });
-  }
+    return res.status(500).json({ error: 'An error occurred' });
+}
 };
 const Employee_manager_CheckReviewPoints_Get = (req, res) => {
   try {
     const { Empid } = req.params;
 
     let query = `
-            SELECT Empid, Empname, Value, Review_Points, Self_Review,imageUrl,Manager_Rating,Manager_Comments
-            FROM all_data_employee_manager_check_review_table`;
+        SELECT Empid, Empname, Value, Review_Points, Self_Review ,Reviewver, Comments, imageUrl
+        FROM all_data_employee_manager_check_review_table`;
 
     const queryParams = [];
 
     // Check if Empid is provided in the URL
     if (Empid) {
-      query += ` WHERE Empid = ?`;
-      queryParams.push(Empid);
+        query += ` WHERE Empid = ?`;
+        queryParams.push(Empid);
     }
 
     Database_Kpi.query(query, queryParams, (err, results) => {
-      if (err) {
-        console.error("Error fetching data:", err);
-        return res
-          .status(500)
-          .json({ error: "An error occurred while fetching data" });
-      }
-
-      if (results.length === 0) {
-        if (Empid) {
-          return res
-            .status(404)
-            .json({ error: `Employee with Empid ${Empid} not found` });
-        } else {
-          return res.status(404).json({ error: "No employees found" });
+        if (err) {
+            console.error("Error fetching data:", err);
+            return res.status(500).json({ error: "An error occurred while fetching data" });
         }
-      }
 
-      if (Empid) {
-        const employeeData = {
-          Empid: results[0].Empid,
-          Empname: results[0].Empname,
-          ratings: results.map((row) => ({
-            Value: row.Value,
-            Review_Points: row.Review_Points,
-            Self_Review: row.Self_Review,
-            imageUrl: row.imageUrl,
-            Manager_Rating: row.Manager_Rating,
-            Manager_Comments: row.Manager_Comments,
-          })),
-        };
-        res.status(200).json({ employee: employeeData });
-      } else {
-        const employeesData = {};
-        results.forEach((row) => {
-          if (!employeesData[row.Empid]) {
-            employeesData[row.Empid] = {
-              Empid: row.Empid,
-              Empname: row.Empname,
-              ratings: [],
+        if (results.length === 0) {
+            if (Empid) {
+                return res.status(404).json({ error: `Employee with Empid ${Empid} not found` });
+            } else {
+                return res.status(404).json({ error: "No employees found" });
+            }
+        }
+
+        if (Empid) {
+            const employeeData = {
+                Empid: results[0].Empid,
+                Empname: results[0].Empname,
+                ratings: results.map((row) => ({
+                    Value:row.Value,
+                    Review_Points: row.Review_Points,
+                    Self_Review: row.Self_Review,
+                    reviewver:row.Reviewver,
+                    Manager_Comments:row.Comments,
+                    Upload:row.imageUrl,
+                })),
             };
-          }
-          employeesData[row.Empid].ratings.push({
-            Value: row.Value,
-            Review_Points: row.Review_Points,
-            Self_Review: row.Self_Review,
-            imageUrl: row.imageUrl,
-            Manager_Rating: row.Manager_Rating,
-            Manager_Comments: row.Manager_Comments,
-          });
-        });
+            res.status(200).json({ employee: employeeData });
+        } else {
+            const employeesData = {};
+            results.forEach((row) => {
+                if (!employeesData[row.Empid]) {
+                    employeesData[row.Empid] = {
+                        Empid: row.Empid,
+                        Empname: row.Empname,
+                        ratings: [],
+                    };
+                }
+                employeesData[row.Empid].ratings.push({
+                  Value:row.Value,
+                    Review_Points: row.Review_Points,
+                    Self_Review: row.Self_Review,
+                    reviewver:row.Reviewver,
+                    Manager_Comments:row.Comments,
+                    Upload:row.imageUrl,
+                });
+            });
 
-        const data = Object.values(employeesData);
-        res.status(200).json({ status: true, data });
-      }
+            const data = Object.values(employeesData);
+            res.status(200).json({ status: true, data });
+        }
     });
-  } catch (error) {
+} catch (error) {
     console.error(error);
-    return res.status(500).json({ error: "An error occurred" });
-  }
+    return res.status(500).json({ error: 'An error occurred' });
+}
 };
 
 module.exports = {
@@ -457,5 +434,5 @@ module.exports = {
   Employee_CheckReviewPoints_Update,
   Employee_Manager_CheckReviewPoints_Post,
   Employee_manager_CheckReviewPoints_Get,
-  AdminCheckReviewPointsDelete
+  AdminCheckReviewPointsDelete,
 };
