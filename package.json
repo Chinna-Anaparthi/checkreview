@@ -5,7 +5,9 @@
   "main": "endpoints.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node endpoints.js"
+    "start": "node endpoints.js",
+    "nodemon": "nodemon endpoints.js"
+
   },
   "author": "",
   "license": "ISC",
@@ -14,6 +16,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "mysql2": "^3.6.5"
+    "mysql2": "^3.6.5",
+    "nodemon": "^3.0.2"
   }
 }
