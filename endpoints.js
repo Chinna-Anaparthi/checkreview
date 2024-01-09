@@ -7,8 +7,8 @@ app.use(parser.urlencoded({ extended: true }));
 app.use(parser.json());
 const cors = require("cors");
 app.use(cors());
-const port = 3000;
-// const ip = "172.17.15.150";
+const port = 5000;
+const ip = "172.17.15.150";
 
 //Check_Review_Points_Admin_Data
 app.post("/admin/emp_checkreviewpoint_insrt", (req, res, next) => {
@@ -47,6 +47,6 @@ app.get("/api/emp_manager_checkreviewpoint_data/:Empid?", (req, res, next) => {
   Server_Logic.Employee_manager_CheckReviewPoints_Get(req, res, () => {});
 });
 
-app.listen(port, () => {
-  console.log(`Server listening on port http://localhost:${port}`);
+app.listen(port,ip, () => {
+  console.log(`Server listening on port http://${ip}:${port}`);
 });

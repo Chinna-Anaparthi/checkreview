@@ -163,17 +163,40 @@ const Employee_CheckReviewPoints_Post = (req, res) => {
   try {
     const data = req.body;
 
-    if (data && Array.isArray(data.ratings)) {
-      for (const rating of data.ratings) {
-        const { Value, ReviewPoint, SelfReview, imageUrl} = rating;
+    if (data && Array.isArray(data.ratings) && Array.isArray(data.techStack)) {
+      const techstackValues = data.techStack.join(', '); 
 
-        const insertQuery = `INSERT INTO all_data_employee_check_review_table (Empid, Empname, Value, Review_Points, Self_Review,imageUrl) VALUES (?,?, ?, ?, ?, ?)`;
+      const insertQuery = `
+        INSERT INTO all_data_employee_check_review (
+          Empid, 
+          Empname,
+          projectName,
+          projectType,
+          projectScope,
+          techStack,
+          description,
+          Value,
+          Review_Points,
+          Self_Review,
+          imageUrl
+        ) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+
+      for (const rating of data.ratings) {
+        const { Value, ReviewPoint, Self_Review, imageUrl } = rating;
+
         const insertValues = [
           data.empid,
           data.empname,
+          data.projectName,
+          data.projectType,
+          data.projectScope,
+          techstackValues,
+          data.description,
           Value,
           ReviewPoint,
-          SelfReview,
+          Self_Review,
           imageUrl,
         ];
 
@@ -184,9 +207,7 @@ const Employee_CheckReviewPoints_Post = (req, res) => {
         });
       }
 
-      return res
-        .status(201)
-        .json({ message: "employee data added successfully" });
+      return res.status(201).json({ message: "Employee data added successfully" });
     } else {
       return res.status(400).json({ error: "Invalid data format" });
     }
@@ -195,13 +216,13 @@ const Employee_CheckReviewPoints_Post = (req, res) => {
     return res.status(500).json({ error: "An error occurred" });
   }
 };
+
 const Employee_CheckReviewPoints_Get = (req, res) => {
   try {
     const { Empid } = req.params;
 
     let query = `
-            SELECT Empid, Empname, Value, Review_Points, Self_Review,imageUrl
-            FROM all_data_employee_check_review_table`;
+      SELECT * FROM all_data_employee_check_review`;
 
     const queryParams = [];
 
@@ -231,36 +252,48 @@ const Employee_CheckReviewPoints_Get = (req, res) => {
 
       if (Empid) {
         const employeeData = {
-          Empid: results[0].Empid,
-          Empname: results[0].Empname,
+          empid: results[0].Empid,
+          empname: results[0].Empname,
+          projectName: results[0].projectName,
+          projectType: results[0].projectType,
+          projectState:results[0].projectState,
+          projectRole:results[0].projectRole,
+          techStack: results[0].techStack ? results[0].techStack.split(',') : [],
+          description: results[0].description,
           ratings: results.map((row) => ({
             Value: row.Value,
-            Review_Points: row.Review_Points,
-            Self_Review: row.Self_Review,
+            ReviewPoint: row.Review_Points,
+            Self_Review: row.Self_Review === '1',
             imageUrl: row.imageUrl,
           })),
         };
-        res.status(200).json({ employee: employeeData });
+        res.status(200).json(employeeData);
       } else {
         const employeesData = {};
         results.forEach((row) => {
           if (!employeesData[row.Empid]) {
             employeesData[row.Empid] = {
-              Empid: row.Empid,
-              Empname: row.Empname,
+              empid: row.Empid,
+              empname: row.Empname,
+              projectName: row.projectName,
+              projectType: row.projectType,
+              projectState:row.projectState,
+              projectRole:row.projectRole,
+              techStack: row.techStack ? row.techStack.split(',') : [],
+              description: row.description,
               ratings: [],
             };
           }
           employeesData[row.Empid].ratings.push({
             Value: row.Value,
-            Review_Points: row.Review_Points,
-            Self_Review: row.Self_Review,
+            ReviewPoint: row.Review_Points,
+            Self_Review: row.Self_Review === '1',
             imageUrl: row.imageUrl,
           });
         });
 
-        const employee = Object.values(employeesData);
-        res.status(200).json({ status: true, employee });
+        const employees = Object.values(employeesData);
+        res.status(200).json({ status: true, employees });
       }
     });
   } catch (error) {
@@ -268,6 +301,7 @@ const Employee_CheckReviewPoints_Get = (req, res) => {
     return res.status(500).json({ error: "An error occurred" });
   }
 };
+
 const Employee_CheckReviewPoints_Update = (req, res) => {
   try {
     const data = req.body;
@@ -276,20 +310,19 @@ const Employee_CheckReviewPoints_Update = (req, res) => {
       const { Empid } = req.params;
 
       const updateQuery = `
-          UPDATE all_data_employee_check_review_table
-          SET Self_Review = ?,
-          imageUrl = ?
-          WHERE Empid = ? AND Value = ? AND Review_Points = ?`;
+        UPDATE all_data_employee_check_review
+        SET projectName = ?, projectType = ?, projectScope = ?,  techStack = ?, description = ?, Self_Review = ?, imageUrl = ?
+        WHERE Empid = ? AND Value = ? AND Review_Points = ?`;
 
       const promises = [];
 
       data.ratings.forEach((rating) => {
-        const { Self_Review, upload, Value, Review_Points } = rating;
+        const { Value, ReviewPoint, Self_Review, imageUrl } = rating;
         promises.push(
           new Promise((resolve, reject) => {
             Database_Kpi.query(
               updateQuery,
-              [Self_Review, upload, Empid, Value, Review_Points],
+              [data.projectName, data.projectType, data.projectScope, JSON.stringify(data.techStack), data.description, Self_Review, imageUrl, Empid, Value, ReviewPoint],
               (err, result) => {
                 if (err) {
                   reject(err);
@@ -324,6 +357,7 @@ const Employee_CheckReviewPoints_Update = (req, res) => {
   }
 };
 
+
 //Check_Review_Points_Employee_Manager_Data
 const Employee_Manager_CheckReviewPoints_Post = (req, res) => {
   try {
@@ -352,6 +386,7 @@ const Employee_Manager_CheckReviewPoints_Post = (req, res) => {
     return res.status(500).json({ error: 'An error occurred' });
 }
 };
+
 const Employee_manager_CheckReviewPoints_Get = (req, res) => {
   try {
     const { Empid } = req.params;
