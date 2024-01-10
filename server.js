@@ -163,8 +163,8 @@ const Employee_CheckReviewPoints_Post = (req, res) => {
   try {
     const data = req.body;
 
-    if (data && Array.isArray(data.ratings) && Array.isArray(data.techStack)) {
-      const techstackValues = data.techStack.join(', '); 
+    if (data && Array.isArray(data.ratings) && Array.isArray(data.projectInfo) && Array.isArray(data.projectInfo[0].techStack)) {
+      const techStackValues = data.projectInfo[0].techStack.join(', '); 
 
       const insertQuery = `
         INSERT INTO all_data_employee_check_review (
@@ -189,11 +189,11 @@ const Employee_CheckReviewPoints_Post = (req, res) => {
         const insertValues = [
           data.empid,
           data.empname,
-          data.projectName,
-          data.projectType,
-          data.projectScope,
-          techstackValues,
-          data.description,
+          data.projectInfo[0].projectName,
+          data.projectInfo[0].ProjectType,
+          data.projectInfo[0].projectScope,
+          techStackValues,
+          data.projectInfo[0].description,
           Value,
           ReviewPoint,
           Self_Review,
@@ -254,12 +254,15 @@ const Employee_CheckReviewPoints_Get = (req, res) => {
         const employeeData = {
           empid: results[0].Empid,
           empname: results[0].Empname,
-          projectName: results[0].projectName,
-          projectType: results[0].projectType,
-          projectState:results[0].projectState,
-          projectRole:results[0].projectRole,
-          techStack: results[0].techStack ? results[0].techStack.split(',') : [],
-          description: results[0].description,
+          projectInfo: [
+            {
+              projectName: results[0].projectName,
+              ProjectType: results[0].projectType,
+              projectScope: results[0].projectScope,
+              techStack: results[0].techStack ? results[0].techStack.split(',').map(stack => stack.trim()) : [],
+              description: results[0].description,
+            }
+          ],
           ratings: results.map((row) => ({
             Value: row.Value,
             ReviewPoint: row.Review_Points,
@@ -275,12 +278,15 @@ const Employee_CheckReviewPoints_Get = (req, res) => {
             employeesData[row.Empid] = {
               empid: row.Empid,
               empname: row.Empname,
-              projectName: row.projectName,
-              projectType: row.projectType,
-              projectState:row.projectState,
-              projectRole:row.projectRole,
-              techStack: row.techStack ? row.techStack.split(',') : [],
-              description: row.description,
+              projectInfo: [
+                {
+                  projectName: row.projectName,
+                  ProjectType: row.projectType,
+                  projectScope: row.projectScope,
+                  techStack: row.techStack ? row.techStack.split(',').map(stack => stack.trim()) : [],
+                  description: row.description,
+                }
+              ],
               ratings: [],
             };
           }
@@ -311,7 +317,7 @@ const Employee_CheckReviewPoints_Update = (req, res) => {
 
       const updateQuery = `
         UPDATE all_data_employee_check_review
-        SET projectName = ?, projectType = ?, projectScope = ?,  techStack = ?, description = ?, Self_Review = ?, imageUrl = ?
+        SET projectName = ?, projectType = ?, projectScope = ?, techStack = ?, description = ?, Self_Review = ?, imageUrl = ?
         WHERE Empid = ? AND Value = ? AND Review_Points = ?`;
 
       const promises = [];
@@ -322,7 +328,7 @@ const Employee_CheckReviewPoints_Update = (req, res) => {
           new Promise((resolve, reject) => {
             Database_Kpi.query(
               updateQuery,
-              [data.projectName, data.projectType, data.projectScope, JSON.stringify(data.techStack), data.description, Self_Review, imageUrl, Empid, Value, ReviewPoint],
+              [data.projectInfo[0].projectName, data.projectInfo[0].ProjectType, data.projectInfo[0].projectState, JSON.stringify(data.projectInfo[0].techStack), data.projectInfo[0].description, Self_Review, imageUrl, Empid, Value, ReviewPoint],
               (err, result) => {
                 if (err) {
                   reject(err);
@@ -356,7 +362,6 @@ const Employee_CheckReviewPoints_Update = (req, res) => {
     return res.status(500).json({ error: "An error occurred" });
   }
 };
-
 
 //Check_Review_Points_Employee_Manager_Data
 const Employee_Manager_CheckReviewPoints_Post = (req, res) => {
