@@ -190,7 +190,7 @@ const Employee_CheckReviewPoints_Post = (req, res) => {
           data.empid,
           data.empname,
           data.projectInfo[0].projectName,
-          data.projectInfo[0].ProjectType,
+          data.projectInfo[0].projectType,
           data.projectInfo[0].projectScope,
           techStackValues,
           data.projectInfo[0].description,
