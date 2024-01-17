@@ -41,10 +41,14 @@ app.put("/api/emp_checkreviewpoint_upd/:Empid", (req, res, next) => {
 
 //Check_Review_Points_Employee_Manager_Data
 app.post("/api/emp_manager_checkreviewpoint_insrt", (req, res, next) => {
-  Server_Logic.Employee_Manager_CheckReviewPoints_Post(req, res, () => {});
+  Server_Logic.Employee_manager_CheckReviewPoints_Post(req, res, () => {});
 });
 app.get("/api/emp_manager_checkreviewpoint_data/:Empid?", (req, res, next) => {
   Server_Logic.Employee_manager_CheckReviewPoints_Get(req, res, () => {});
+});
+
+app.put("/api/emp_manager_checkreviewpoint_upd/:Empid", (req, res, next) => {
+  Server_Logic.Employee_manager_CheckReviewPoints_Update(req, res, () => {});
 });
 
 app.listen(port, () => {

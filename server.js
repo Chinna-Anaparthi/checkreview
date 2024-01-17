@@ -205,7 +205,7 @@ const Employee_CheckReviewPoints_Post = (req, res) => {
             console.error(err);
           }
         });
-      }
+      } 
 
       return res.status(201).json({ message: "Employee data added successfully" });
     } else {
@@ -364,107 +364,223 @@ const Employee_CheckReviewPoints_Update = (req, res) => {
 };
 
 //Check_Review_Points_Employee_Manager_Data
-const Employee_Manager_CheckReviewPoints_Post = (req, res) => {
+const Employee_manager_CheckReviewPoints_Post = (req, res) => {
   try {
     const data = req.body;
 
-    if (data && Array.isArray(data.ratings)) {
-        for (const rating of data.ratings) {
-            const { Value, review_point, self_review, reviewver, Comments, Upload } = rating;
+    if (
+      data &&
+      Array.isArray(data.ratings) &&
+      Array.isArray(data.projectInfo) &&
+      Array.isArray(data.projectInfo[0].techStack)
+    ) {
+      const techStackValues = data.projectInfo[0].techStack.join(', ');
 
-            const insertQuery = `INSERT INTO all_data_employee_manager_check_review_table(Empid, Empname, Value, Review_Points, Self_Review, Reviewver, Comments, imageUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-            const insertValues = [data.empid, data.empname, Value, review_point, self_review, reviewver, Comments, Upload];
+      const insertQuery = `
+        INSERT INTO all_data_employee_manager_check_review_table (
+          Empid,
+          Empname,
+          projectName,
+          projectType,
+          projectScope,
+          techStack,
+          description,
+          Value,
+          Review_Points,
+          Self_Review,
+          Reviewver,
+          Comments,
+          imageUrl
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
 
-            Database_Kpi.query(insertQuery, insertValues, (err, results) => {
-                if (err) {
-                    console.error(err);
-                }
-            });
-        }
+      for (const rating of data.ratings) {
+        const { Value, ReviewPoint, Self_Review, reviewver, Comments, imageUrl } = rating;
 
-        return res.status(201).json({ message: 'manager data added successfully' });
+        const insertValues = [
+          data.empid,
+          data.empname,
+          data.projectInfo[0].projectName,
+          data.projectInfo[0].projectType,
+          data.projectInfo[0].projectScope,
+          techStackValues,
+          data.projectInfo[0].description,
+          Value,
+          ReviewPoint,
+          Self_Review,
+          reviewver,
+          Comments,
+          imageUrl,
+        ];
+
+        Database_Kpi.query(insertQuery, insertValues, (err, results) => {
+          if (err) {
+            console.error(err);
+          }
+        });
+      }
+
+      return res.status(201).json({ message: 'Manager data added successfully' });
     } else {
-        return res.status(400).json({ error: 'Invalid data format' });
+      return res.status(400).json({ error: 'Invalid data format' });
     }
-} catch (error) {
+  } catch (error) {
     console.error(error);
     return res.status(500).json({ error: 'An error occurred' });
-}
+  }
 };
+
 
 const Employee_manager_CheckReviewPoints_Get = (req, res) => {
   try {
     const { Empid } = req.params;
 
     let query = `
-        SELECT Empid, Empname, Value, Review_Points, Self_Review ,Reviewver, Comments, imageUrl
-        FROM all_data_employee_manager_check_review_table`;
+      SELECT * FROM all_data_employee_manager_check_review_table`;
 
     const queryParams = [];
 
     // Check if Empid is provided in the URL
     if (Empid) {
-        query += ` WHERE Empid = ?`;
-        queryParams.push(Empid);
+      query += ` WHERE Empid = ?`;
+      queryParams.push(Empid);
     }
 
     Database_Kpi.query(query, queryParams, (err, results) => {
-        if (err) {
-            console.error("Error fetching data:", err);
-            return res.status(500).json({ error: "An error occurred while fetching data" });
-        }
+      if (err) {
+        console.error("Error fetching data:", err);
+        return res
+          .status(500)
+          .json({ error: "An error occurred while fetching data" });
+      }
 
-        if (results.length === 0) {
-            if (Empid) {
-                return res.status(404).json({ error: `Employee with Empid ${Empid} not found` });
-            } else {
-                return res.status(404).json({ error: "No employees found" });
-            }
-        }
-
+      if (results.length === 0) {
         if (Empid) {
-            const employeeData = {
-                Empid: results[0].Empid,
-                Empname: results[0].Empname,
-                ratings: results.map((row) => ({
-                    Value:row.Value,
-                    Review_Points: row.Review_Points,
-                    Self_Review: row.Self_Review,
-                    reviewver:row.Reviewver,
-                    Manager_Comments:row.Comments,
-                    Upload:row.imageUrl,
-                })),
-            };
-            res.status(200).json({ employee: employeeData });
+          return res
+            .status(404)
+            .json({ error: `Employee with Empid ${Empid} not found` });
         } else {
-            const employeesData = {};
-            results.forEach((row) => {
-                if (!employeesData[row.Empid]) {
-                    employeesData[row.Empid] = {
-                        Empid: row.Empid,
-                        Empname: row.Empname,
-                        ratings: [],
-                    };
-                }
-                employeesData[row.Empid].ratings.push({
-                  Value:row.Value,
-                    Review_Points: row.Review_Points,
-                    Self_Review: row.Self_Review,
-                    reviewver:row.Reviewver,
-                    Manager_Comments:row.Comments,
-                    Upload:row.imageUrl,
-                });
-            });
-
-            const data = Object.values(employeesData);
-            res.status(200).json({ status: true, data });
+          return res.status(404).json({ error: "No employees found" });
         }
+      }
+
+      if (Empid) {
+        const employeeData = {
+          empid: results[0].Empid,
+          empname: results[0].Empname,
+          projectInfo: [
+            {
+              projectName: results[0].projectName,
+              ProjectType: results[0].projectType,
+              projectScope: results[0].projectScope,
+              techStack: results[0].techStack ? results[0].techStack.split(',').map(stack => stack.trim()) : [],
+              description: results[0].description,
+            }
+          ],
+          ratings: results.map((row) => ({
+            Value: row.Value,
+            ReviewPoint: row.Review_Points,
+            Self_Review: row.Self_Review === '1',
+            reviewver: row.Reviewver,
+            Manager_Comments: row.Comments,
+            imageUrl: row.imageUrl,
+          })),
+        };
+        res.status(200).json(employeeData);
+      } else {
+        const employeesData = {};
+        results.forEach((row) => {
+          if (!employeesData[row.Empid]) {
+            employeesData[row.Empid] = {
+              empid: row.Empid,
+              empname: row.Empname,
+              projectInfo: [
+                {
+                  projectName: row.projectName,
+                  ProjectType: row.projectType,
+                  projectScope: row.projectScope,
+                  techStack: row.techStack ? row.techStack.split(',').map(stack => stack.trim()) : [],
+                  description: row.description,
+                }
+              ],
+              ratings: [],
+            };
+          }
+          employeesData[row.Empid].ratings.push({
+            Value: row.Value,
+            ReviewPoint: row.Review_Points,
+            Self_Review: row.Self_Review === '1',
+            reviewver: row.Reviewver,
+              Manager_Comments: row.Comments,
+            imageUrl: row.imageUrl,
+          });
+        });
+
+        const employees = Object.values(employeesData);
+        res.status(200).json({ status: true, employees });
+      }
     });
-} catch (error) {
+  } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: 'An error occurred' });
-}
+    return res.status(500).json({ error: "An error occurred" });
+  }
 };
+
+const Employee_manager_CheckReviewPoints_Update = (req, res) => {
+  try {
+    const data = req.body;
+
+    if (data && Array.isArray(data.ratings)) {
+      const { Empid } = req.params;
+
+      const updateQuery = `
+        UPDATE all_data_employee_manager_check_review_table
+        SET projectName = ?, projectType = ?, projectScope = ?, techStack = ?, description = ?, Reviewver = ?, Comments = ?
+        WHERE Empid = ? AND Value = ? AND Review_Points = ?`;
+
+      const promises = [];
+
+      data.ratings.forEach((rating) => {
+        const { Value, ReviewPoint,Self_Review,imageUrl, reviewver, Comments } = rating;
+        promises.push(
+          new Promise((resolve, reject) => {
+            Database_Kpi.query(
+              updateQuery,
+              [data.projectInfo[0].projectName, data.projectInfo[0].projectType, data.projectInfo[0].projectScope, JSON.stringify(data.projectInfo[0].techStack), data.projectInfo[0].description, reviewver, Comments, Empid, Value, ReviewPoint,Self_Review,imageUrl],
+              (err, result) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve(result);
+                }
+              }
+            );
+          })
+        );
+      });
+
+      Promise.all(promises)
+        .then(() => {
+          return res.json({
+            success: true,
+            message: "Employee data updated successfully",
+          });
+        })
+        .catch((err) => {
+          console.error("Error updating data:", err);
+          return res
+            .status(500)
+            .json({ error: "An error occurred while updating data." });
+        });
+    } else {
+      return res.status(400).json({ error: "Invalid data format" });
+    }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "An error occurred" });
+  }
+};
+
 
 module.exports = {
   AdminCheckReviewPoints,
@@ -472,7 +588,8 @@ module.exports = {
   Employee_CheckReviewPoints_Post,
   Employee_CheckReviewPoints_Get,
   Employee_CheckReviewPoints_Update,
-  Employee_Manager_CheckReviewPoints_Post,
+  Employee_manager_CheckReviewPoints_Post,
   Employee_manager_CheckReviewPoints_Get,
+  Employee_manager_CheckReviewPoints_Update,
   AdminCheckReviewPointsDelete,
 };
