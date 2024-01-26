@@ -497,7 +497,7 @@ const Employee_manager_CheckReviewPoints_Get = (req, res) => {
               projectInfo: [
                 {
                   projectName: row.projectName,
-                  ProjectType: row.projectType,
+                  projectType: row.projectType,
                   projectScope: row.projectScope,
                   techStack: row.techStack ? row.techStack.split(',').map(stack => stack.trim()) : [],
                   description: row.description,
